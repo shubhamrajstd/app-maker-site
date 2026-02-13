@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI App Builder</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 500px; margin: auto; }
+        input, textarea, button { width: 100%; margin: 10px 0; padding: 10px; }
+        button { background: #007bff; color: white; border: none; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h2>🚀 Build Android App</h2>
+    
+    <label>GitHub Token:</label>
+    <input type="password" id="token" placeholder="Paste Token Here">
+
+    <label>App Idea:</label>
+    <textarea id="prompt" placeholder="E.g. Make a music player"></textarea>
+
+    <label>Google Services JSON (Optional):</label>
+    <input type="file" id="jsonFile">
+
+    <button onclick="build()">Build Now</button>
+    <p id="status"></p>
+
+    <script>
+        // 👇 YAHAN APNA USERNAME LIKHEIN 👇
+        const USER = "YOUR_USERNAME_HERE"; 
+        const REPO = "android-engine"; // Private repo ka naam
+
+        async function build() {
+            const token = document.getElementById('token').value;
+            const prompt = document.getElementById('prompt').value;
+            const fileInput = document.getElementById('jsonFile');
+            
+            if(!token) { alert("Token missing!"); return; }
+
+            document.getElementById('status').innerText = "Sending request...";
+
+            let jsonBase64 = "";
+            if(fileInput.files.length > 0) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    jsonBase64 = btoa(e.target.result);
+                    send(token, prompt, jsonBase64);
+                };
+                reader.readAsText(fileInput.files[0]);
+            } else {
+                send(token, prompt, "");
+            }
+        }
+
+        async function send(token, prompt, jsonBase64) {
+            try {
+                const res = await fetch(`https://api.github.com/repos/${USER}/${REPO}/dispatches`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    },
+                    body: JSON.stringify({
+                        event_type: 'build_app',
+                        client_payload: { prompt: prompt, google_json: jsonBase64 }
+                    })
+                });
+                if(res.ok) document.getElementById('status').innerText = "✅ Started! Check Private Repo Actions.";
+                else document.getElementById('status').innerText = "❌ Error: " + res.statusText;
+            } catch(e) { alert(e); }
+        }
+    </script>
+</body>
+</html>
